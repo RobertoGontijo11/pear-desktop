@@ -1,12 +1,292 @@
-/* Milestone 0: visible proof that the plugin's stylesheet is injected. */
+/*
+ * Three-column layout:
+ *   left   = YouTube Music's guide (library), widened and always open
+ *   centre = normal page content
+ *   right  = the player page (artwork + queue tabs) docked as a column
+ *
+ * Only applies on wide windows; below the breakpoint the stock layout is kept.
+ * Every selector that depends on YouTube Music's markup lives in this file.
+ */
 :root {
   --library-layout-accent: #7c5cff;
+  --library-layout-left: 280px;
+  --library-layout-right: 340px;
+  --library-layout-divider: rgba(255, 255, 255, 0.08);
 }
 
-ytmusic-nav-bar {
-  border-bottom: 2px solid var(--library-layout-accent) !important;
+@media (min-width: 1100px) {
+  /* ---- left column ---------------------------------------------------- */
+  html[data-library-layout='on'] ytmusic-app-layout {
+    --ytmusic-guide-width: var(--library-layout-left) !important;
+  }
+
+  html[data-library-layout='on'] tp-yt-app-drawer#guide,
+  html[data-library-layout='on'] #guide-wrapper,
+  html[data-library-layout='on'] ytmusic-guide-renderer {
+    width: var(--library-layout-left) !important;
+  }
+
+  html[data-library-layout='on'] #guide-wrapper {
+    border-right: 1px solid var(--library-layout-divider);
+    box-sizing: border-box;
+  }
+
+  /* ---- centre column: leave room for the right column while playing --- */
+  html[data-library-layout='on'] ytmusic-app-layout #content {
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+    box-sizing: border-box !important;
+  }
+
+  html[data-library-layout='on']:not([data-library-layout-right='off'])
+    ytmusic-app-layout[player-visible]
+    #content {
+    margin-right: var(--library-layout-right) !important;
+  }
+
+  /* right column hidden with its toggle */
+  html[data-library-layout='on'][data-library-layout-right='off']
+    ytmusic-app-layout
+    > ytmusic-player-page {
+    display: none !important;
+  }
+
+  /* left column hidden with its toggle */
+  html[data-library-layout='on'][data-library-layout-left='off']
+    ytmusic-app-layout {
+    --ytmusic-guide-width: 0px !important;
+  }
+
+  html[data-library-layout='on'][data-library-layout-left='off']
+    tp-yt-app-drawer#guide {
+    display: none !important;
+  }
+
+  /* ---- right column: dock the player page ----------------------------- */
+  html[data-library-layout='on']
+    ytmusic-app-layout[player-visible]
+    > ytmusic-player-page {
+    position: fixed !important;
+    top: var(--ytmusic-nav-bar-height) !important;
+    bottom: var(--ytmusic-player-bar-height) !important;
+    right: 0 !important;
+    left: auto !important;
+    width: var(--library-layout-right) !important;
+    height: auto !important;
+    transform: none !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    background: #0a0a0a !important;
+    border-left: 1px solid var(--library-layout-divider);
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  html[data-library-layout='on']
+    ytmusic-app-layout[player-visible]
+    > ytmusic-player-page
+    .content.ytmusic-player-page {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    padding: 12px !important;
+    box-sizing: border-box;
+    gap: 12px;
+  }
+
+  /* now playing: compact artwork on top */
+  html[data-library-layout='on']
+    ytmusic-app-layout[player-visible]
+    > ytmusic-player-page
+    #main-panel {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 1 / 1;
+    max-height: 38%;
+    margin: 0 !important;
+    padding: 0 !important;
+    min-width: 0 !important;
+  }
+
+  /* queue / lyrics / related tabs fill the rest */
+  html[data-library-layout='on']
+    ytmusic-app-layout[player-visible]
+    > ytmusic-player-page
+    #side-panel {
+    flex: 1 1 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* the open/close toggle makes no sense when the page is always docked */
+  html[data-library-layout='on'] ytmusic-player-bar .toggle-player-page-button {
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
 }
 
-ytmusic-guide-renderer {
-  border-right: 2px solid var(--library-layout-accent) !important;
+/* ---- sidebar quick search (all widths) -------------------------------- */
+#library-layout-search {
+  display: block;
+  box-sizing: border-box;
+  width: calc(100% - 32px);
+  margin: 4px 16px 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--library-layout-divider);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+#library-layout-search::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+#library-layout-search:focus {
+  border-color: var(--library-layout-accent);
+}
+
+ytmusic-guide-entry-renderer[data-library-layout-hidden] {
+  display: none !important;
+}
+
+/* ---- player bar: now playing · transport · tools ---------------------- */
+html[data-library-layout-bar='on'] ytmusic-app-layout > ytmusic-player-bar {
+  display: grid !important;
+  grid-template-areas: 'info transport tools' !important;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+  align-items: center !important;
+  column-gap: 16px;
+}
+
+html[data-library-layout-bar='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  .middle-controls {
+  grid-area: info !important;
+  justify-content: flex-start !important;
+  min-width: 0 !important;
+}
+
+html[data-library-layout-bar='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  .left-controls {
+  grid-area: transport !important;
+  justify-content: center !important;
+}
+
+html[data-library-layout-bar='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  .right-controls {
+  grid-area: tools !important;
+  justify-self: end !important;
+}
+
+/* shuffle / repeat, once moved next to the transport buttons */
+html[data-library-layout-bar='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  .left-controls-buttons {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px;
+}
+
+/* play/pause as the one filled, round button */
+html[data-library-layout-bar='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  #play-pause-button {
+  background: #fff !important;
+  color: #000 !important;
+  border-radius: 50% !important;
+  --iron-icon-fill-color: #000;
+  --yt-spec-text-primary: #000;
+  margin: 0 8px !important;
+}
+
+html[data-library-layout-bar='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  #play-pause-button:hover {
+  transform: scale(1.06);
+}
+
+/* column toggles */
+.library-layout-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+}
+
+.library-layout-toggle:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.library-layout-toggle[aria-pressed='true'] {
+  color: var(--library-layout-accent);
+}
+
+/* ---- hover play button on library entries ----------------------------- */
+html[data-library-layout='on'] ytmusic-guide-entry-renderer #play-button {
+  --ytmusic-play-button-background-color: var(
+    --library-layout-accent
+  ) !important;
+  --ytmusic-play-button-active-background-color: var(
+    --library-layout-accent
+  ) !important;
+  border-radius: 50% !important;
+}
+
+/* ---- shuffle modes: off · queue only · queue + discoveries ------------- */
+html[data-library-layout-shuffle='shuffle']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  .shuffle,
+html[data-library-layout-shuffle='smart']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  .shuffle {
+  color: var(--library-layout-accent) !important;
+  --iron-icon-fill-color: var(--library-layout-accent);
+  position: relative;
+}
+
+/* "+" badge marks the discoveries mode */
+html[data-library-layout-shuffle='smart']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  .shuffle::after {
+  content: '+';
+  position: absolute;
+  top: 2px;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--library-layout-accent);
+  color: #fff;
+  font: 700 12px/14px sans-serif;
+  text-align: center;
+  pointer-events: none;
 }
