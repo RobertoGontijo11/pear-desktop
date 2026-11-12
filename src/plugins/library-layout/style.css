@@ -177,10 +177,15 @@ html[data-library-layout-bar='on'] ytmusic-app-layout {
 }
 
 html[data-library-layout-bar='on'] ytmusic-app-layout > ytmusic-player-bar {
-  --library-layout-progress: min(520px, 36vw);
+  /* centre column holds transport + progress; side groups never reach it */
+  --library-layout-center: clamp(360px, 40vw, 620px);
+  /* progress = centre column minus room for the two time labels */
+  --library-layout-progress: calc(var(--library-layout-center) - 112px);
   display: grid !important;
   grid-template-areas: 'info transport tools' !important;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+  grid-template-columns:
+    minmax(0, 1fr) var(--library-layout-center)
+    minmax(0, 1fr) !important;
   align-items: center !important;
   column-gap: 16px;
   height: 88px !important;
@@ -226,7 +231,7 @@ html[data-library-layout-bar='on']
   > ytmusic-player-bar
   .left-controls-buttons {
   display: grid !important;
-  grid-template-columns: 40px 40px 56px 40px 40px !important;
+  grid-template-columns: 36px 36px 48px 36px 36px !important;
   grid-auto-flow: column !important;
   align-items: center !important;
   justify-items: center !important;
@@ -359,12 +364,12 @@ html[data-library-layout-bar='on']
 }
 
 .library-layout-time[data-side='elapsed'] {
-  right: calc(50% + (var(--library-layout-progress) / 2) + 8px);
+  right: calc(50% + (var(--library-layout-progress) / 2) + 10px);
   text-align: right;
 }
 
 .library-layout-time[data-side='total'] {
-  left: calc(50% + (var(--library-layout-progress) / 2) + 8px);
+  left: calc(50% + (var(--library-layout-progress) / 2) + 10px);
   text-align: left;
 }
 
@@ -595,4 +600,231 @@ html[data-library-layout-bar='on']
   .right-controls-buttons
   .expand-button {
   display: none !important;
+}
+
+/* ---- expanded right column: covers the centre column -------------------- */
+.library-layout-expand {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+}
+
+.library-layout-expand:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* only meaningful while the column is docked (wide windows) */
+@media (max-width: 959px) {
+  .library-layout-expand {
+    display: none;
+  }
+}
+
+@media (min-width: 960px) {
+  html[data-library-layout='on'][data-library-layout-expanded='on']
+    ytmusic-app-layout[player-visible]
+    > ytmusic-player-page {
+    left: var(--ytmusic-guide-width) !important;
+    width: auto !important;
+    z-index: 3;
+  }
+
+  /* video/artwork on the left, tabs on the right */
+  html[data-library-layout='on'][data-library-layout-expanded='on']
+    ytmusic-app-layout[player-visible]
+    > ytmusic-player-page
+    .content.ytmusic-player-page {
+    flex-direction: row !important;
+    padding: 24px !important;
+    gap: 24px;
+  }
+
+  html[data-library-layout='on'][data-library-layout-expanded='on']
+    ytmusic-app-layout[player-visible]
+    > ytmusic-player-page
+    #main-panel {
+    flex: 1 1 auto !important;
+    width: auto !important;
+    height: 100% !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  html[data-library-layout='on'][data-library-layout-expanded='on']
+    ytmusic-app-layout[player-visible]
+    > ytmusic-player-page
+    #main-panel
+    ytmusic-player#player {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: calc(100% - 48px) !important;
+    aspect-ratio: 16 / 9;
+    margin: 0 !important;
+  }
+
+  html[data-library-layout='on'][data-library-layout-expanded='on']
+    ytmusic-app-layout[player-visible]
+    > ytmusic-player-page
+    #side-panel {
+    flex: 0 0 min(440px, 42%) !important;
+    width: auto !important;
+    height: 100% !important;
+  }
+
+  /* the centre column is covered: keep the expand button clear of its tabs */
+  html[data-library-layout-expanded='on'] .library-layout-expand {
+    top: 16px;
+    right: 16px;
+  }
+}
+
+/* ---- player bar polish: one size per role, even spacing ----------------- */
+/* left group: square cover · title/artist · + · ⋮ */
+html[data-library-layout-bar='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  .middle-controls {
+  align-items: center !important;
+  gap: 12px;
+}
+
+html[data-library-layout-bar='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  .thumbnail-image-wrapper {
+  flex: none !important;
+  width: 48px !important;
+  height: 48px !important;
+  margin: 0 !important;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+html[data-library-layout-bar='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  .thumbnail-image-wrapper
+  img {
+  width: 48px !important;
+  height: 48px !important;
+  object-fit: cover !important;
+}
+
+html[data-library-layout-bar='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  .content-info-wrapper {
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+html[data-library-layout-bar='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  .middle-controls-buttons {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px;
+  margin: 0 !important;
+  flex: none !important;
+}
+
+/* dislike removed: the "+" covers likes; the renderer stays in the page
+   (hidden) because the "+" drives its thumbs-up */
+html[data-library-layout-bar='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  ytmusic-like-button-renderer {
+  display: none !important;
+}
+
+/* secondary buttons (+, ⋮, volume, column toggles): 32px, 20px icons */
+html[data-library-layout-bar='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  :is(
+    .library-layout-save,
+    .middle-controls-buttons ytmusic-menu-renderer,
+    .right-controls-buttons yt-icon-button.volume,
+    .library-layout-toggle
+  ) {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+html[data-library-layout-bar='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  :is(
+    .library-layout-save,
+    .middle-controls-buttons ytmusic-menu-renderer,
+    .right-controls-buttons yt-icon-button.volume,
+    .library-layout-toggle
+  )
+  :is(button, yt-button-shape) {
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+html[data-library-layout-bar='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  :is(
+    .library-layout-save,
+    .middle-controls-buttons ytmusic-menu-renderer,
+    .right-controls-buttons yt-icon-button.volume,
+    .library-layout-toggle
+  )
+  :is(svg, yt-icon, .yt-icon-shape, .yt-icon-shape > div) {
+  width: 20px !important;
+  height: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* right group: volume · biblioteca · fila, evenly spaced */
+html[data-library-layout-bar='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  .right-controls-buttons {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px;
+}
+
+html[data-library-layout-bar='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  .right-controls {
+  margin: 0 !important;
+  padding: 0 !important;
 }

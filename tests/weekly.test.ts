@@ -8,7 +8,7 @@ import {
   pickSeeds,
   weekKey,
   type Track,
-} from '../src/plugins/library-layout/weekly';
+} from '../src/plugins/library-layout/weekly-core';
 
 // Pure logic only: these tests never launch the app or touch the account.
 

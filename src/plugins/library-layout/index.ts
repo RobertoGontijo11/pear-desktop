@@ -1,11 +1,15 @@
 import { createPlugin } from '@/utils';
 
+import { createExpandedView } from './expanded-view';
+import { createGenreMixes } from './mixes';
 import { createPlayerBar } from './player-bar';
 import { createSaveButton } from './save-button';
 import { createSidebarSearch } from './sidebar-search';
 import { createSmartShuffle } from './smart-shuffle';
 import style from './style.css?inline';
 import { createWeeklyPlaylist, type WeeklyState } from './weekly';
+
+import type { MixesConfig } from './mixes-core';
 
 // Keep in sync with the @media breakpoint in style.css.
 const WIDE_QUERY = '(min-width: 960px)';
@@ -22,10 +26,12 @@ const sidebarSearch = createSidebarSearch();
 const playerBar = createPlayerBar();
 const smartShuffle = createSmartShuffle();
 const saveButton = createSaveButton();
+const expandedView = createExpandedView();
 let stateObserver: MutationObserver | null = null;
 let attachObserver: MutationObserver | null = null;
 let wide: MediaQueryList | null = null;
 let weekly: ReturnType<typeof createWeeklyPlaylist> | null = null;
+let mixes: ReturnType<typeof createGenreMixes> | null = null;
 
 /**
  * The player page is docked as the right column by CSS. YouTube Music hides
@@ -62,6 +68,8 @@ export default createPlugin({
     // Pointer to the "Descobertas da semana" playlist and the week it was
     // last filled; the playlist itself lives in the YouTube Music account.
     weekly: {} as WeeklyState,
+    // Daily genre mixes: definitions (editable) and their playlists' state.
+    mixes: {} as Partial<MixesConfig>,
   },
   stylesheets: [style],
   renderer: {
@@ -69,14 +77,21 @@ export default createPlugin({
       document.documentElement.dataset.libraryLayout = 'on';
       weekly = createWeeklyPlaylist(context);
       weekly.start();
+      mixes = createGenreMixes(context);
+      mixes.start();
       // Manual trigger for the DevTools console: libraryLayoutWeekly(true)
       (window as unknown as Record<string, unknown>).libraryLayoutWeekly = (
         force?: boolean,
       ) => weekly?.generate(Boolean(force));
+      // Manual trigger for the DevTools console: libraryLayoutMixes(true)
+      (window as unknown as Record<string, unknown>).libraryLayoutMixes = (
+        force?: boolean,
+      ) => mixes?.generate(Boolean(force));
       sidebarSearch.start();
       playerBar.start();
       smartShuffle.start();
       saveButton.start();
+      expandedView.start();
 
       wide = window.matchMedia(WIDE_QUERY);
       wide.addEventListener('change', keepPlayerPageClosed);
@@ -99,8 +114,11 @@ export default createPlugin({
       playerBar.stop();
       smartShuffle.stop();
       saveButton.stop();
+      expandedView.stop();
       weekly?.stop();
       weekly = null;
+      mixes?.stop();
+      mixes = null;
       stateObserver?.disconnect();
       stateObserver = null;
       attachObserver?.disconnect();

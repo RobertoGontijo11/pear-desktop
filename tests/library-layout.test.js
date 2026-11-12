@@ -110,7 +110,9 @@ test('plugin starts and injects its stylesheet', async () => {
 });
 
 test('left column is the widened library guide', async () => {
-  await expect.poll(async () => (await box('#guide-wrapper'))?.width).toBe(LEFT);
+  await expect
+    .poll(async () => (await box('#guide-wrapper'))?.width)
+    .toBe(LEFT);
   expect((await box('#guide-wrapper')).x).toBe(0);
 });
 
@@ -118,7 +120,10 @@ test('right column docks the player page while something is loaded', async () =>
   const playerVisible = await window.evaluate(() =>
     document.querySelector('ytmusic-app-layout').hasAttribute('player-visible'),
   );
-  test.skip(!playerVisible, 'needs a track loaded in the player (signed-in session)');
+  test.skip(
+    !playerVisible,
+    'needs a track loaded in the player (signed-in session)',
+  );
 
   // The page must stay in the "closed" state so the centre content is shown.
   await expect(window.locator('ytmusic-app-layout')).toHaveAttribute(
@@ -128,8 +133,9 @@ test('right column docks the player page while something is loaded', async () =>
 
   // Poll: the column settles a moment after the window is resized.
   await expect
-    .poll(async () =>
-      (await box('ytmusic-app-layout > ytmusic-player-page'))?.width,
+    .poll(
+      async () =>
+        (await box('ytmusic-app-layout > ytmusic-player-page'))?.width,
     )
     .toBe(RIGHT);
   const page = await box('ytmusic-app-layout > ytmusic-player-page');
