@@ -44,7 +44,7 @@
   }
 
   /* ---- centre column: leave room for the right column while playing --- */
-  html[data-library-layout='on'] ytmusic-app-layout #content {
+  html[data-library-layout='on'] ytmusic-app-layout > #content {
     padding-left: 24px !important;
     padding-right: 24px !important;
     box-sizing: border-box !important;
@@ -52,7 +52,7 @@
 
   html[data-library-layout='on']:not([data-library-layout-right='off'])
     ytmusic-app-layout[player-visible]
-    #content {
+    > #content {
     margin-right: var(--library-layout-right) !important;
   }
 
@@ -123,6 +123,16 @@
     min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
+  }
+
+  /* YouTube Music only shows the Letra / Comentários / Relacionados content
+     while its player page is "open"; the docked column keeps it closed. */
+  html[data-library-layout='on']
+    ytmusic-app-layout[player-visible]
+    > ytmusic-player-page
+    ytmusic-tab-renderer
+    ytmusic-section-list-renderer.ytmusic-tab-renderer {
+    display: block !important;
   }
 
   /* the open/close toggle makes no sense when the page is always docked */
@@ -264,20 +274,48 @@ html[data-library-layout-bar='on']
   grid-area: 1 / 5 !important;
 }
 
-/* play/pause as the one filled, round button */
+/* play/pause as the one filled, round button, icon centred inside */
 html[data-library-layout-bar='on']
   ytmusic-app-layout
   > ytmusic-player-bar
   #play-pause-button {
   width: 40px !important;
   height: 40px !important;
-  padding: 6px !important;
+  padding: 0 !important;
   box-sizing: border-box !important;
   background: #fff !important;
   color: #000 !important;
   border-radius: 50% !important;
   --iron-icon-fill-color: #000;
   --yt-spec-text-primary: #000;
+}
+
+html[data-library-layout-bar='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  #play-pause-button
+  #button {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  padding: 0 !important;
+}
+
+html[data-library-layout-bar='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  #play-pause-button
+  yt-icon,
+html[data-library-layout-bar='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  #play-pause-button
+  yt-icon
+  svg {
+  width: 24px !important;
+  height: 24px !important;
 }
 
 html[data-library-layout-bar='on']
@@ -305,12 +343,29 @@ html[data-library-layout-bar='on']
   ytmusic-app-layout
   > ytmusic-player-bar
   .time-info {
-  position: absolute !important;
-  bottom: 14px !important;
-  left: calc(50% + (var(--library-layout-progress) / 2) + 12px) !important;
-  margin: 0 !important;
-  font-size: 12px !important;
-  white-space: nowrap !important;
+  display: none !important;
+}
+
+/* elapsed time left of the progress bar, total time right of it */
+.library-layout-time {
+  position: absolute;
+  bottom: 14px;
+  min-width: 40px;
+  font-size: 12px;
+  line-height: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.library-layout-time[data-side='elapsed'] {
+  right: calc(50% + (var(--library-layout-progress) / 2) + 8px);
+  text-align: right;
+}
+
+.library-layout-time[data-side='total'] {
+  left: calc(50% + (var(--library-layout-progress) / 2) + 8px);
+  text-align: left;
 }
 
 /* column toggles */
@@ -523,4 +578,21 @@ html[data-library-layout-filter='artists'] .library-layout-item-thumb {
   padding: 12px 8px;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.6);
+}
+
+/* ---- right controls: volume always visible ----------------------------- */
+html[data-library-layout-bar='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  .right-controls-buttons
+  .volume {
+  display: inline-block !important;
+}
+
+html[data-library-layout-bar='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  .right-controls-buttons
+  .expand-button {
+  display: none !important;
 }

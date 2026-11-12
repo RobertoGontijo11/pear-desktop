@@ -19,6 +19,7 @@ const SELECTORS = {
   shuffle: `${BAR} .shuffle`,
   repeat: `${BAR} .repeat`,
   tools: `${BAR} .right-controls-buttons`,
+  video: 'video',
   // YouTube Music's own guide: the hamburger button collapses it to the
   // mini guide and remembers the choice, so the left toggle drives that.
   guideDrawer: 'tp-yt-app-drawer#guide',
@@ -76,10 +77,59 @@ const panelIcon = (side: Side) => {
   return svg;
 };
 
+/** Seconds as m:ss or h:mm:ss, like the player shows them. */
+export const formatTime = (seconds: number) => {
+  if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+  const total = Math.floor(seconds);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = String(total % 60).padStart(2, '0');
+  return h ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
+};
+
 export const createPlayerBar = () => {
   let rightVisible = loadRight();
   const buttons: Partial<Record<Side, HTMLButtonElement>> = {};
   let observer: MutationObserver | null = null;
+  // Created on first use: this module is also loaded in the main process,
+  // where there is no document.
+  let times: { elapsed: HTMLSpanElement; total: HTMLSpanElement } | null = null;
+  const timeLabels = () => {
+    if (!times) {
+      const label = (side: string) => {
+        const span = document.createElement('span');
+        span.className = 'library-layout-time';
+        span.dataset.side = side;
+        return span;
+      };
+      times = { elapsed: label('elapsed'), total: label('total') };
+    }
+    return times;
+  };
+  let video: HTMLVideoElement | null = null;
+
+  const updateTimes = () => {
+    const labels = timeLabels();
+    labels.elapsed.textContent = formatTime(video?.currentTime ?? 0);
+    labels.total.textContent = formatTime(video?.duration ?? 0);
+  };
+
+  const attachTimes = () => {
+    const bar = document.querySelector(SELECTORS.bar);
+    const labels = timeLabels();
+    if (bar && !labels.elapsed.isConnected) {
+      bar.append(labels.elapsed, labels.total);
+    }
+    const current = document.querySelector<HTMLVideoElement>(SELECTORS.video);
+    if (current && current !== video) {
+      for (const type of ['timeupdate', 'durationchange', 'loadedmetadata'])
+        video?.removeEventListener(type, updateTimes);
+      video = current;
+      for (const type of ['timeupdate', 'durationchange', 'loadedmetadata'])
+        video.addEventListener(type, updateTimes);
+      updateTimes();
+    }
+  };
 
   const leftVisible = () =>
     document.querySelector(SELECTORS.guideDrawer)?.hasAttribute('opened') ??
@@ -154,6 +204,7 @@ export const createPlayerBar = () => {
   };
 
   const sync = () => {
+    attachTimes();
     moveShuffleAndRepeat();
     addToggles();
     applyState();
@@ -174,6 +225,8 @@ export const createPlayerBar = () => {
         const transport = document.querySelector(SELECTORS.transport);
         const shuffle = document.querySelector(SELECTORS.shuffle);
         const settled =
+          times?.elapsed.isConnected &&
+          document.querySelector(SELECTORS.video) === video &&
           buttons.left?.isConnected &&
           buttons.right?.isConnected &&
           (!shuffle || shuffle.parentElement === transport);
@@ -192,6 +245,11 @@ export const createPlayerBar = () => {
       observer = null;
       buttons.left?.remove();
       buttons.right?.remove();
+      times?.elapsed.remove();
+      times?.total.remove();
+      for (const type of ['timeupdate', 'durationchange', 'loadedmetadata'])
+        video?.removeEventListener(type, updateTimes);
+      video = null;
       const root = document.documentElement;
       delete root.dataset.libraryLayoutBar;
       delete root.dataset.libraryLayoutRight;
