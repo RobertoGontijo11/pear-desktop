@@ -6,6 +6,13 @@
  * innerHTML is not available to plugins.
  */
 
+import {
+  createLibraryFilter,
+  ITEM_CLASS,
+  ITEM_TITLE_CLASS,
+  ITEMS_ID,
+} from './library-filter';
+
 const SELECTORS = {
   // The visible guide; a second, collapsed copy lives in #mini-guide.
   guide: '#guide-content ytmusic-guide-renderer',
@@ -32,6 +39,8 @@ export const createSidebarSearch = () => {
   let query = '';
   let observer: MutationObserver | null = null;
   let input: HTMLInputElement | null = null;
+  // Type chips (playlists / albums / artists) live around the search box.
+  const filter = createLibraryFilter({ onRender: () => applyFilter() });
 
   /** The playlist section is the one with the most entries (nav has 3). */
   const playlistSection = () => {
@@ -43,20 +52,27 @@ export const createSidebarSearch = () => {
     return sections.length > 1 ? sections[sections.length - 1] : null;
   };
 
-  const applyFilter = () => {
-    const section = playlistSection();
-    if (!section) return;
-    for (const entry of section.querySelectorAll<HTMLElement>(
-      SELECTORS.entry,
-    )) {
-      const title =
-        entry.querySelector(SELECTORS.entryTitle)?.textContent ?? '';
-      entry.toggleAttribute(
-        HIDDEN_ATTR,
-        query !== '' && !matches(title, query),
-      );
+  const hideIfNoMatch = (entry: HTMLElement, titleSelector: string) => {
+    const title = entry.querySelector(titleSelector)?.textContent ?? '';
+    const hidden = query !== '' && !matches(title, query);
+    if (entry.hasAttribute(HIDDEN_ATTR) !== hidden) {
+      entry.toggleAttribute(HIDDEN_ATTR, hidden);
     }
   };
+
+  function applyFilter() {
+    const section = playlistSection();
+    for (const entry of section?.querySelectorAll<HTMLElement>(
+      SELECTORS.entry,
+    ) ?? []) {
+      hideIfNoMatch(entry, SELECTORS.entryTitle);
+    }
+    for (const item of document.querySelectorAll<HTMLElement>(
+      `#${ITEMS_ID} .${ITEM_CLASS}`,
+    )) {
+      hideIfNoMatch(item, `.${ITEM_TITLE_CLASS}`);
+    }
+  }
 
   const ensureInput = () => {
     const section = playlistSection();
@@ -64,7 +80,10 @@ export const createSidebarSearch = () => {
     const firstEntry = section.querySelector(SELECTORS.entry);
     const list = firstEntry?.parentElement;
     if (!list) return;
-    if (input?.isConnected) return;
+    if (input?.isConnected) {
+      filter.mount(input);
+      return;
+    }
 
     input = document.createElement('input');
     input.id = INPUT_ID;
@@ -83,6 +102,7 @@ export const createSidebarSearch = () => {
       input.addEventListener(type, (event) => event.stopPropagation());
     }
     list.parentElement?.insertBefore(input, list);
+    filter.mount(input);
   };
 
   const sync = () => {
@@ -103,6 +123,7 @@ export const createSidebarSearch = () => {
     stop() {
       observer?.disconnect();
       observer = null;
+      filter.unmount();
       input?.remove();
       input = null;
       query = '';
