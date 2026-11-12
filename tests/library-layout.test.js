@@ -9,8 +9,9 @@ delete process.env.NODE_ENV;
 
 const appPath = path.resolve(import.meta.dirname, '..');
 
-const LEFT = 280;
-const RIGHT = 340;
+// Column widths at the 1280px test window (compact tier, below 1400px).
+const LEFT = 240;
+const RIGHT = 300;
 
 /** @type {import('@playwright/test').ElectronApplication} */
 let app;
@@ -49,7 +50,7 @@ test.beforeAll(async () => {
   });
   await expect
     .poll(() => window.evaluate(() => window.innerWidth))
-    .toBeGreaterThanOrEqual(1100);
+    .toBeGreaterThanOrEqual(960);
 });
 
 test.afterAll(async () => {

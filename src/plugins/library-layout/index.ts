@@ -6,7 +6,7 @@ import { createSmartShuffle } from './smart-shuffle';
 import style from './style.css?inline';
 
 // Keep in sync with the @media breakpoint in style.css.
-const WIDE_QUERY = '(min-width: 1100px)';
+const WIDE_QUERY = '(min-width: 960px)';
 
 const SELECTORS = {
   layout: 'ytmusic-app-layout',

@@ -19,30 +19,30 @@ const SELECTORS = {
   shuffle: `${BAR} .shuffle`,
   repeat: `${BAR} .repeat`,
   tools: `${BAR} .right-controls-buttons`,
+  // YouTube Music's own guide: the hamburger button collapses it to the
+  // mini guide and remembers the choice, so the left toggle drives that.
+  guideDrawer: 'tp-yt-app-drawer#guide',
+  guideButton: 'ytmusic-nav-bar #guide-button',
 } as const;
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
-const STORAGE_KEY = 'library-layout:columns';
+const STORAGE_KEY = 'library-layout:right-column';
 
 type Side = 'left' | 'right';
-type ColumnState = Record<Side, boolean>;
 
-const loadState = (): ColumnState => {
+const loadRight = () => {
   try {
-    const saved = JSON.parse(
-      localStorage.getItem(STORAGE_KEY) ?? '{}',
-    ) as Partial<ColumnState>;
-    return { left: saved.left !== false, right: saved.right !== false };
+    return localStorage.getItem(STORAGE_KEY) !== 'off';
   } catch {
-    return { left: true, right: true };
+    return true;
   }
 };
 
-const saveState = (state: ColumnState) => {
+const saveRight = (visible: boolean) => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(STORAGE_KEY, visible ? 'on' : 'off');
   } catch {
-    // Storage can be unavailable; the toggles still work for this session.
+    // Storage can be unavailable; the toggle still works for this session.
   }
 };
 
@@ -77,20 +77,31 @@ const panelIcon = (side: Side) => {
 };
 
 export const createPlayerBar = () => {
-  const state = loadState();
+  let rightVisible = loadRight();
   const buttons: Partial<Record<Side, HTMLButtonElement>> = {};
   let observer: MutationObserver | null = null;
 
-  const applyState = () => {
-    const root = document.documentElement;
-    root.dataset.libraryLayoutLeft = state.left ? 'on' : 'off';
-    root.dataset.libraryLayoutRight = state.right ? 'on' : 'off';
-    for (const side of ['left', 'right'] as const) {
-      buttons[side]?.setAttribute('aria-pressed', String(state[side]));
-    }
+  const leftVisible = () =>
+    document.querySelector(SELECTORS.guideDrawer)?.hasAttribute('opened') ??
+    true;
+
+  /** Lets YouTube Music re-measure carousels and grids for the new width. */
+  const relayout = () => {
+    requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
   };
 
-  const makeToggle = (side: Side, label: string) => {
+  const applyState = () => {
+    const root = document.documentElement;
+    const next = rightVisible ? 'on' : 'off';
+    if (root.dataset.libraryLayoutRight !== next) {
+      root.dataset.libraryLayoutRight = next;
+      relayout();
+    }
+    buttons.left?.setAttribute('aria-pressed', String(leftVisible()));
+    buttons.right?.setAttribute('aria-pressed', String(rightVisible));
+  };
+
+  const makeToggle = (side: Side, label: string, onToggle: () => void) => {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'library-layout-toggle';
@@ -100,11 +111,21 @@ export const createPlayerBar = () => {
     button.append(panelIcon(side));
     button.addEventListener('click', (event) => {
       event.stopPropagation();
-      state[side] = !state[side];
-      saveState(state);
-      applyState();
+      onToggle();
     });
     return button;
+  };
+
+  const toggleLeft = () => {
+    document.querySelector<HTMLElement>(SELECTORS.guideButton)?.click();
+    // The drawer's `opened` attribute changes after the click; the observer
+    // picks it up and refreshes the pressed state.
+  };
+
+  const toggleRight = () => {
+    rightVisible = !rightVisible;
+    saveRight(rightVisible);
+    applyState();
   };
 
   const moveShuffleAndRepeat = () => {
@@ -126,8 +147,8 @@ export const createPlayerBar = () => {
   const addToggles = () => {
     const tools = document.querySelector(SELECTORS.tools);
     if (!tools) return;
-    if (!buttons.left) buttons.left = makeToggle('left', 'Biblioteca');
-    if (!buttons.right) buttons.right = makeToggle('right', 'Fila');
+    buttons.left ??= makeToggle('left', 'Biblioteca', toggleLeft);
+    buttons.right ??= makeToggle('right', 'Fila', toggleRight);
     if (!buttons.left.isConnected) tools.append(buttons.left);
     if (!buttons.right.isConnected) tools.append(buttons.right);
   };
@@ -141,21 +162,28 @@ export const createPlayerBar = () => {
   return {
     start() {
       document.documentElement.dataset.libraryLayoutBar = 'on';
-      observer = new MutationObserver(() => {
-        // Only act while something is still missing; avoids reacting to our
-        // own DOM moves forever.
+      observer = new MutationObserver((records) => {
+        // Guide opened/closed: only the pressed state needs refreshing.
+        if (records.every((record) => record.type === 'attributes')) {
+          applyState();
+          relayout();
+          return;
+        }
+        // Otherwise only act while something is still missing, so our own
+        // DOM moves do not retrigger this forever.
         const transport = document.querySelector(SELECTORS.transport);
+        const shuffle = document.querySelector(SELECTORS.shuffle);
         const settled =
           buttons.left?.isConnected &&
           buttons.right?.isConnected &&
-          (!document.querySelector(SELECTORS.shuffle) ||
-            document.querySelector(SELECTORS.shuffle)?.parentElement ===
-              transport);
+          (!shuffle || shuffle.parentElement === transport);
         if (!settled) sync();
       });
       observer.observe(document.documentElement, {
         childList: true,
         subtree: true,
+        attributes: true,
+        attributeFilter: ['opened'],
       });
       sync();
     },
@@ -166,7 +194,6 @@ export const createPlayerBar = () => {
       buttons.right?.remove();
       const root = document.documentElement;
       delete root.dataset.libraryLayoutBar;
-      delete root.dataset.libraryLayoutLeft;
       delete root.dataset.libraryLayoutRight;
     },
   };
