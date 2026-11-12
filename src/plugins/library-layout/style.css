@@ -380,3 +380,36 @@ html[data-library-layout-shuffle='smart']
   text-align: center;
   pointer-events: none;
 }
+
+/* ---- save button: "+" → liked ✓ → add to playlist --------------------- */
+.library-layout-save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+}
+
+.library-layout-save:hover {
+  color: #fff;
+  transform: scale(1.06);
+}
+
+.library-layout-save[aria-pressed='true'] {
+  color: var(--library-layout-accent);
+}
+
+/* the "+" replaces the thumbs-up; thumbs-down stays */
+html[data-library-layout-save='on']
+  ytmusic-app-layout
+  > ytmusic-player-bar
+  ytmusic-like-button-renderer
+  #button-shape-like {
+  display: none !important;
+}

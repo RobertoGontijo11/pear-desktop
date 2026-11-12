@@ -1,6 +1,7 @@
 import { createPlugin } from '@/utils';
 
 import { createPlayerBar } from './player-bar';
+import { createSaveButton } from './save-button';
 import { createSidebarSearch } from './sidebar-search';
 import { createSmartShuffle } from './smart-shuffle';
 import style from './style.css?inline';
@@ -19,6 +20,7 @@ const SELECTORS = {
 const sidebarSearch = createSidebarSearch();
 const playerBar = createPlayerBar();
 const smartShuffle = createSmartShuffle();
+const saveButton = createSaveButton();
 let stateObserver: MutationObserver | null = null;
 let attachObserver: MutationObserver | null = null;
 let wide: MediaQueryList | null = null;
@@ -63,6 +65,7 @@ export default createPlugin({
       sidebarSearch.start();
       playerBar.start();
       smartShuffle.start();
+      saveButton.start();
 
       wide = window.matchMedia(WIDE_QUERY);
       wide.addEventListener('change', keepPlayerPageClosed);
@@ -84,6 +87,7 @@ export default createPlugin({
       sidebarSearch.stop();
       playerBar.stop();
       smartShuffle.stop();
+      saveButton.stop();
       stateObserver?.disconnect();
       stateObserver = null;
       attachObserver?.disconnect();
