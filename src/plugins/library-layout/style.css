@@ -828,3 +828,16 @@ html[data-library-layout-bar='on']
   margin: 0 !important;
   padding: 0 !important;
 }
+
+/* ---- whole artwork, never cropped --------------------------------------
+   Songs without a music video play a still of the square cover inside the
+   16:9 player; YouTube Music fills the box ("cover"), cutting the top and
+   bottom. Fit it instead, in the docked and in the expanded column. */
+html[data-library-layout='on']
+  ytmusic-app-layout[player-visible]
+  > ytmusic-player-page
+  ytmusic-player#player
+  :is(video.video-stream, #song-image img) {
+  object-fit: contain !important;
+  background: #000;
+}
