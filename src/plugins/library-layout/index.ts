@@ -5,6 +5,7 @@ import { createSaveButton } from './save-button';
 import { createSidebarSearch } from './sidebar-search';
 import { createSmartShuffle } from './smart-shuffle';
 import style from './style.css?inline';
+import { createWeeklyPlaylist, type WeeklyState } from './weekly';
 
 // Keep in sync with the @media breakpoint in style.css.
 const WIDE_QUERY = '(min-width: 960px)';
@@ -24,6 +25,7 @@ const saveButton = createSaveButton();
 let stateObserver: MutationObserver | null = null;
 let attachObserver: MutationObserver | null = null;
 let wide: MediaQueryList | null = null;
+let weekly: ReturnType<typeof createWeeklyPlaylist> | null = null;
 
 /**
  * The player page is docked as the right column by CSS. YouTube Music hides
@@ -57,11 +59,20 @@ export default createPlugin({
   restartNeeded: false,
   config: {
     enabled: true,
+    // Pointer to the "Descobertas da semana" playlist and the week it was
+    // last filled; the playlist itself lives in the YouTube Music account.
+    weekly: {} as WeeklyState,
   },
   stylesheets: [style],
   renderer: {
-    start() {
+    start(context) {
       document.documentElement.dataset.libraryLayout = 'on';
+      weekly = createWeeklyPlaylist(context);
+      weekly.start();
+      // Manual trigger for the DevTools console: libraryLayoutWeekly(true)
+      (window as unknown as Record<string, unknown>).libraryLayoutWeekly = (
+        force?: boolean,
+      ) => weekly?.generate(Boolean(force));
       sidebarSearch.start();
       playerBar.start();
       smartShuffle.start();
@@ -88,6 +99,8 @@ export default createPlugin({
       playerBar.stop();
       smartShuffle.stop();
       saveButton.stop();
+      weekly?.stop();
+      weekly = null;
       stateObserver?.disconnect();
       stateObserver = null;
       attachObserver?.disconnect();
