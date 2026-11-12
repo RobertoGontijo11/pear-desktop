@@ -1,0 +1,12 @@
+/* Milestone 0: visible proof that the plugin's stylesheet is injected. */
+:root {
+  --library-layout-accent: #7c5cff;
+}
+
+ytmusic-nav-bar {
+  border-bottom: 2px solid var(--library-layout-accent) !important;
+}
+
+ytmusic-guide-renderer {
+  border-right: 2px solid var(--library-layout-accent) !important;
+}
